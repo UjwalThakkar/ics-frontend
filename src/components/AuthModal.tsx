@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { X, Eye, EyeOff, Phone, Mail, User, Lock } from 'lucide-react'
+import { phpAPI } from "@/lib/php-api-client";
 
 interface AuthModalProps {
   isOpen: boolean

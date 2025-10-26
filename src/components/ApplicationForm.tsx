@@ -125,16 +125,16 @@ For online submission and tracking, visit: https://indianconsulate.gov.za
       try {
         const response = await phpAPI.submitApplication({
           serviceType,
-          ApplicationForm: formData,
+          applicantInfo: formData,
         });
 
         console.log("response from submissoin: ", response);
 
         if (response.success) {
           alert(
-            `✅ Application submitted successfully!\n📧 Confirmation sent to: ${response.data?.application_id}`
+            `✅ Application submitted successfully!\n📧 Confirmation sent to: ${response?.applicationId}`
           );
-          window.location.href = `/track?id=${response.data?.application_id}`;
+          window.location.href = `/track?id=${response?.application_id}`;
         }
       } catch (error) {
         alert("❌ Failed to submit application. Please try again.");
