@@ -46,6 +46,7 @@ class PHPAPIClient {
     });
 
     try {
+      
       const response = await fetch(fullUrl, {
         ...options,
         headers,
@@ -100,6 +101,33 @@ class PHPAPIClient {
       console.log("✅ Login successful");
     }
 
+    return response;
+  }
+
+  async register(
+    first_name: string,
+    last_name: string,
+    email: string,
+    phone: string,
+    password: string
+  ) {
+    console.log("registering new user...");
+    const response = await this.request<{
+      user: any;
+    }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        first_name,
+        last_name,
+        email,
+        phone,
+        password,
+      }),
+    });
+
+    if (response.success) {
+      console.log("✅ Registration successful");
+    }
     return response;
   }
 

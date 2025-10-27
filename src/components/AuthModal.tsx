@@ -1,120 +1,152 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { X, Eye, EyeOff, Phone, Mail, User, Lock, AlertCircle } from 'lucide-react'
-import { phpAPI } from "@/lib/php-api-client"
-import { useAuth } from '@/contexts/AuthContext'
+import React, { useState } from "react";
+import {
+  X,
+  Eye,
+  EyeOff,
+  Phone,
+  Mail,
+  User,
+  Lock,
+  AlertCircle,
+} from "lucide-react";
+import { phpAPI } from "@/lib/php-api-client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AuthModalProps {
-  isOpen: boolean
-  onClose: () => void
-  type: 'login' | 'register'
-  onSwitchType: (type: 'login' | 'register') => void
+  isOpen: boolean;
+  onClose: () => void;
+  type: "login" | "register";
+  onSwitchType: (type: "login" | "register") => void;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchType }) => {
-  const { login } = useAuth()
+const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  type,
+  onSwitchType,
+}) => {
+  const { login, register } = useAuth();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    otp: '',
-    username: ''
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [step, setStep] = useState<'form' | 'otp' | 'success'>('form')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    otp: "",
+    username: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<"form" | "otp" | "success">("form");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsLoading(true)
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
 
     try {
-      if (type === 'register') {
+      if (type === "register") {
         // Mock registration flow - will be connected to real API later
-        console.log('📝 Mock registration:', formData)
-        
+        console.log("📝 Attempting register with:", formData);
+
         // Validate passwords match
         if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match')
-          setIsLoading(false)
-          return
+          setError("Passwords do not match");
+          setIsLoading(false);
+          return;
         }
 
         // Simulate registration process
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        setStep('otp')
-        setIsLoading(false)
-      } else {
-        // Real login using PHP API
-        console.log('🔐 Attempting login with:', { 
-          type: 'user',
-          username: formData.username || formData.email, 
-          email: formData.email 
-        })
-
-        const username = formData.username || formData.email
-        const type = 'user'
-        const result = await login(type, username, formData.password)
+        const result = await register(
+          formData.first_name,
+          formData.last_name,
+          formData.email,
+          formData.phone,
+          formData.password
+        );
 
         if (result.success) {
-          console.log('✅ Login successful!')
-          setStep('success')
+          console.log("registration successful");
+          setStep("success");
           setTimeout(() => {
-            onClose()
-            resetForm()
-          }, 2000)
+            onClose();
+            resetForm();
+          }, 2000);
         } else {
-          console.error('❌ Login failed:', result.error)
-          setError(result.error || 'Login failed. Please try again.')
+          console.error("registration failed:", result.error);
+          setError(result.error || "Registration failed. Please try again.");
+        }
+      } else {
+        // Real login using PHP API
+        console.log("🔐 Attempting login with:", {
+          type: "user",
+          username: formData.username || formData.email,
+          email: formData.email,
+        });
+
+        const username = formData.username || formData.email;
+        const type = "user";
+        const result = await login(type, username, formData.password);
+
+        if (result.success) {
+          console.log("✅ Login successful!");
+          setStep("success");
+          setTimeout(() => {
+            onClose();
+            resetForm();
+          }, 2000);
+        } else {
+          console.error("❌ Login failed:", result.error);
+          setError(result.error || "Login failed. Please try again.");
         }
       }
     } catch (err: any) {
-      console.error('❌ Submit error:', err)
-      setError(err.message || 'An unexpected error occurred. Please try again.')
+      console.error("❌ Submit error:", err);
+      setError(
+        err.message || "An unexpected error occurred. Please try again."
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleOTPVerification = () => {
-    setIsLoading(true)
+    setIsLoading(true);
     setTimeout(() => {
-      setStep('success')
-      setIsLoading(false)
+      setStep("success");
+      setIsLoading(false);
       setTimeout(() => {
-        onClose()
-        setStep('form')
-      }, 2000)
-    }, 1500)
-  }
+        onClose();
+        setStep("form");
+      }, 2000);
+    }, 1500);
+  };
 
   const resetForm = () => {
     setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-      otp: '',
-      username: ''
-    })
-    setStep('form')
-    setError(null)
-  }
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+      otp: "",
+      username: "",
+    });
+    setStep("form");
+    setError(null);
+  };
 
   const handleClose = () => {
-    onClose()
-    resetForm()
-  }
+    onClose();
+    resetForm();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -128,9 +160,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
               </div>
               <div>
                 <h2 className="text-xl font-bold">
-                  {type === 'login' ? 'Login' : 'Create Account'}
+                  {type === "login" ? "Login" : "Create Account"}
                 </h2>
-                <p className="text-blue-100 text-sm">Access your consular services</p>
+                <p className="text-blue-100 text-sm">
+                  Access your consular services
+                </p>
               </div>
             </div>
             <button
@@ -154,9 +188,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
             </div>
           )}
 
-          {step === 'form' && (
+          {step === "form" && (
             <form onSubmit={handleSubmit} className="space-y-4">
-              {type === 'register' && (
+              {type === "register" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -165,8 +199,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                     <input
                       type="text"
                       required
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      value={formData.first_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, first_name: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -177,15 +213,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                     <input
                       type="text"
                       required
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      value={formData.last_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, last_name: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
               )}
 
-              {type === 'login' && (
+              {type === "login" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Username or Email *
@@ -196,7 +234,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                       type="text"
                       required
                       value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, username: e.target.value })
+                      }
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="officer123 or email@example.com"
                     />
@@ -204,7 +244,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                 </div>
               )}
 
-              {type === 'register' && (
+              {type === "register" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email Address *
@@ -215,7 +255,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                       type="email"
                       required
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="your.email@example.com"
                     />
@@ -223,7 +265,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                 </div>
               )}
 
-              {type === 'register' && (
+              {type === "register" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number *
@@ -234,7 +276,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                       type="tel"
                       required
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="+27 XX XXX XXXX"
                     />
@@ -249,10 +293,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     required
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your password"
                   />
@@ -261,12 +307,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
               </div>
 
-              {type === 'register' && (
+              {type === "register" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Confirm Password *
@@ -277,7 +327,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                       type="password"
                       required
                       value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Confirm your password"
                     />
@@ -285,7 +340,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                 </div>
               )}
 
-              {type === 'register' && (
+              {type === "register" && (
                 <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded-lg">
                   <p className="font-medium mb-1">Password Requirements:</p>
                   <ul className="list-disc list-inside space-y-1">
@@ -305,22 +360,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                 {isLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    {type === 'login' ? 'Signing In...' : 'Creating Account...'}
+                    {type === "login" ? "Signing In..." : "Creating Account..."}
                   </>
+                ) : type === "login" ? (
+                  "Sign In"
                 ) : (
-                  type === 'login' ? 'Sign In' : 'Create Account'
+                  "Create Account"
                 )}
               </button>
             </form>
           )}
 
-          {step === 'otp' && (
+          {step === "otp" && (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
                 <Phone className="h-8 w-8 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">Verify Your Account</h3>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Verify Your Account
+                </h3>
                 <p className="text-gray-600 text-sm">
                   We've sent a verification code to your email and phone number
                 </p>
@@ -333,7 +392,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                 <input
                   type="text"
                   value={formData.otp}
-                  onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, otp: e.target.value })
+                  }
                   className="w-full px-4 py-3 text-center text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="000000"
                   maxLength={6}
@@ -351,12 +412,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                     Verifying...
                   </>
                 ) : (
-                  'Verify Account'
+                  "Verify Account"
                 )}
               </button>
 
               <button
-                onClick={() => setStep('form')}
+                onClick={() => setStep("form")}
                 className="text-blue-600 hover:text-blue-800 text-sm"
               >
                 Back to form
@@ -364,40 +425,53 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
             </div>
           )}
 
-          {step === 'success' && (
+          {step === "success" && (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-8 w-8 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">
-                  {type === 'login' ? 'Welcome Back!' : 'Account Created!'}
+                  {type === "login" ? "Welcome Back!" : "Account Created!"}
                 </h3>
                 <p className="text-gray-600 text-sm">
-                  {type === 'login'
-                    ? 'You have been successfully logged in.'
-                    : 'Your account has been created and verified successfully.'
-                  }
+                  {type === "login"
+                    ? "You have been successfully logged in."
+                    : "Your account has been created and verified successfully."}
                 </p>
               </div>
             </div>
           )}
 
-          {step === 'form' && (
+          {step === "form" && (
             <div className="mt-6 text-center">
               <p className="text-gray-600 text-sm">
-                {type === 'login' ? "Don't have an account?" : "Already have an account?"}
+                {type === "login"
+                  ? "Don't have an account?"
+                  : "Already have an account?"}
                 <button
-                  onClick={() => onSwitchType(type === 'login' ? 'register' : 'login')}
+                  onClick={() =>
+                    onSwitchType(type === "login" ? "register" : "login")
+                  }
                   className="text-blue-600 hover:text-blue-800 font-medium ml-1"
                 >
-                  {type === 'login' ? 'Create Account' : 'Sign In'}
+                  {type === "login" ? "Create Account" : "Sign In"}
                 </button>
               </p>
 
-              {type === 'login' && (
+              {type === "login" && (
                 <button className="text-blue-600 hover:text-blue-800 text-sm mt-2">
                   Forgot your password?
                 </button>
@@ -407,7 +481,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AuthModal
+export default AuthModal;
