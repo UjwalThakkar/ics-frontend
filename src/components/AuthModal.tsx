@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Eye, EyeOff, Phone, Mail, User, Lock } from 'lucide-react'
-import { phpAPI } from "@/lib/php-api-client";
+import { X, Eye, EyeOff, Phone, Mail, User, Lock, AlertCircle } from 'lucide-react'
+import { phpAPI } from "@/lib/php-api-client"
+import { useAuth } from '@/contexts/AuthContext'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -12,6 +13,7 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchType }) => {
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -19,31 +21,67 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
     phone: '',
     password: '',
     confirmPassword: '',
-    otp: ''
+    otp: '',
+    username: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState<'form' | 'otp' | 'success'>('form')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
       if (type === 'register') {
+        // Mock registration flow - will be connected to real API later
+        console.log('📝 Mock registration:', formData)
+        
+        // Validate passwords match
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match')
+          setIsLoading(false)
+          return
+        }
+
+        // Simulate registration process
+        await new Promise(resolve => setTimeout(resolve, 1500))
         setStep('otp')
+        setIsLoading(false)
       } else {
-        setStep('success')
-        setTimeout(() => {
-          onClose()
-          setStep('form')
-        }, 2000)
+        // Real login using PHP API
+        console.log('🔐 Attempting login with:', { 
+          type: 'user',
+          username: formData.username || formData.email, 
+          email: formData.email 
+        })
+
+        const username = formData.username || formData.email
+        const type = 'user'
+        const result = await login(type, username, formData.password)
+
+        if (result.success) {
+          console.log('✅ Login successful!')
+          setStep('success')
+          setTimeout(() => {
+            onClose()
+            resetForm()
+          }, 2000)
+        } else {
+          console.error('❌ Login failed:', result.error)
+          setError(result.error || 'Login failed. Please try again.')
+        }
       }
+    } catch (err: any) {
+      console.error('❌ Submit error:', err)
+      setError(err.message || 'An unexpected error occurred. Please try again.')
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleOTPVerification = () => {
@@ -66,9 +104,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
       phone: '',
       password: '',
       confirmPassword: '',
-      otp: ''
+      otp: '',
+      username: ''
     })
     setStep('form')
+    setError(null)
   }
 
   const handleClose = () => {
@@ -103,6 +143,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
         </div>
 
         <div className="p-6">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
+              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-red-800">Error</p>
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            </div>
+          )}
+
           {step === 'form' && (
             <form onSubmit={handleSubmit} className="space-y-4">
               {type === 'register' && (
@@ -134,22 +185,43 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, type, onSwitchTy
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address *
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="your.email@example.com"
-                  />
+              {type === 'login' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Username or Email *
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="officer123 or email@example.com"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {type === 'register' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="your.email@example.com"
+                    />
+                  </div>
+                </div>
+              )}
 
               {type === 'register' && (
                 <div>

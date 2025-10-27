@@ -2,19 +2,20 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X, ChevronDown, Phone, Mail, MapPin, Globe } from 'lucide-react'
+import { Menu, X, ChevronDown, Phone, Mail, MapPin, Globe, User as UserIcon } from 'lucide-react'
 import IndianEmblem from './IndianEmblem'
 import AuthModal from './AuthModal'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isServicesOpen, setIsServicesOpen] = useState(false)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authType, setAuthType] = useState<'login' | 'register'>('login')
-  const [isLoggedIn, setIsLoggedIn] = useState(false) // This would come from your auth context
   const [isScrolled, setIsScrolled] = useState(false)
   const { language, setLanguage, t } = useLanguage()
+  const { user, isAuthenticated, logout } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -164,8 +165,19 @@ const Header = () => {
 
             {/* CTA Buttons */}
             <div className="hidden lg:flex items-center space-x-4">
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 <>
+                  <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-md">
+                    <UserIcon className="h-4 w-4 text-navy" />
+                    <span className="text-sm font-medium text-navy">
+                      {user?.username || user?.email}
+                    </span>
+                    {user?.role && (
+                      <span className="text-xs bg-saffron text-white px-2 py-0.5 rounded">
+                        {user.role}
+                      </span>
+                    )}
+                  </div>
                   <Link
                     href="/dashboard"
                     className="px-4 py-2 text-gray-700 hover:text-navy transition-colors"
@@ -173,7 +185,7 @@ const Header = () => {
                     My Applications
                   </Link>
                   <button
-                    onClick={() => setIsLoggedIn(false)}
+                    onClick={logout}
                     className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors rounded-md"
                   >
                     Logout
