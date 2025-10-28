@@ -46,7 +46,6 @@ class PHPAPIClient {
     });
 
     try {
-      
       const response = await fetch(fullUrl, {
         ...options,
         headers,
@@ -82,14 +81,14 @@ class PHPAPIClient {
   }
 
   // Authentication
-  async login(type: string, username: string, password: string) {
+  async login(type: string, username: string, password: string, otp?: string) {
     console.log("🔐 Attempting login...");
     const response = await this.request<{
       token: string;
       user: any;
     }>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ type, username, password }),
+      body: JSON.stringify({ type, username, password, otp }),
     });
 
     if (response.success) {
@@ -214,6 +213,7 @@ class PHPAPIClient {
 
     return response.json();
   }
+
 
   // Admin APIs
   admin = {
