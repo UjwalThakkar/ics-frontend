@@ -86,13 +86,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
         // Real login using PHP API
         console.log("🔐 Attempting login with:", {
           type: "user",
-          username: formData.username || formData.email,
-          email: formData.email,
+          email: formData.username || formData.email,
         });
 
-        const username = formData.username || formData.email;
+        const email = formData.username || formData.email;
         const type = "user";
-        const result = await login(type, username, formData.password);
+        const result = await login(type, email, formData.password);
 
         if (result.success) {
           console.log("✅ Login successful!");

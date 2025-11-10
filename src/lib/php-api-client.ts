@@ -1,288 +1,266 @@
 // src/lib/php-api-client.ts
+/**
+ * PHP API client for the Indian Consular Appointment System
+ * -------------------------------------------------------
+ * - Handles login / token persistence
+ * - All endpoints used in the 7-step booking wizard
+ * - **NEW** Admin panel endpoints (dashboard, applications, appointments)
+ * - Automatic Bearer token injection
+ * - Simple error handling (throws on API or network errors)
+ * - Type-safe response shapes (mirrors Postman spec)
+ */
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
-interface ApiResponse<T> {
+/* ------------------------------------------------------------------ */
+/* Helper Types – match the exact JSON shapes returned by the backend */
+/* ------------------------------------------------------------------ */
+interface ApiResponse<T = any> {
   success: boolean;
-  token?: string;
-  uesr: T;
-  error?: {
-    code: number;
-    message: string;
-    details?: any;
+  message?: string;
+  error?: { code: string; message: string };
+  [key: string]: any;
+}
+
+interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone_no?: string;
   };
 }
 
+/* -------------------------- ADMIN TYPES --------------------------- */
+import {
+  Stats,
+  Application,
+  Appointment,
+  Pagination,
+  AdminStatsResponse,
+  AdminApplicationsResponse,
+  AdminAppointmentsResponse,
+  AdminAppointmentDetailsResponse,
+  AdminUpdateStatusResponse,
+} from "@/types/admin";
+
+/* ------------------------------------------------------------------ */
+/* Main Client Class                                                  */
+/* ------------------------------------------------------------------ */
 class PHPAPIClient {
   private token: string | null = null;
 
   constructor() {
-    // Load token from localStorage on client side
     if (typeof window !== "undefined") {
-      this.token = localStorage.getItem("auth_token");
+      this.token = localStorage.getItem("auth_token") ?? null;
     }
   }
 
+  /* --------------------------------------------------------------- */
+  /* Private request wrapper                                         */
+  /* --------------------------------------------------------------- */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
+    init: RequestInit = {}
+  ): Promise<{ data: T }> {
+    const url = `${API_BASE_URL}${endpoint}`;
     const headers: HeadersInit = {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...init.headers,
     };
 
     if (this.token) {
       headers["Authorization"] = `Bearer ${this.token}`;
     }
 
-    // ✨ ADD: Full URL for debugging
-    const fullUrl = `${API_BASE_URL}${endpoint}`;
-    console.log("🌐 API Request:", {
-      url: fullUrl,
-      method: options.method || "GET",
-      hasToken: !!this.token,
-    });
+    console.debug("→", init.method ?? "GET", url);
+    const res = await fetch(url, { ...init, headers, credentials: "omit" });
 
-    try {
-      const response = await fetch(fullUrl, {
-        ...options,
-        headers,
-        // ✨ ADD: Mode and credentials for CORS
-        mode: "cors",
-        credentials: "omit", // Change to 'include' if you need cookies
-      });
+    const payload: ApiResponse<T> = await res.json();
 
-      console.log("✅ API Response Status:", response.status);
-
-      const data = await response.json();
-      console.log("📦 API Response Data:", data);
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || "API request failed");
-      }
-
-      return data;
-    } catch (error) {
-      console.error("❌ API Error:", error);
-
-      // ✨ ADD: More detailed error logging
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        console.error("🚫 Network Error - Possible causes:");
-        console.error("1. PHP backend is not running");
-        console.error("2. Wrong API URL:", API_BASE_URL);
-        console.error("3. CORS not configured in PHP backend");
-        console.error("4. Firewall blocking the request");
-      }
-
-      throw error;
-    }
-  }
-
-  // Authentication
-  async login(type: string, username: string, password: string, otp?: string) {
-    console.log("🔐 Attempting login...");
-    const response = await this.request<{
-      token: string;
-      user: any;
-    }>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ type, username, password, otp }),
-    });
-
-    if (response.success) {
-      this.token = response.token;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("auth_token", response.token);
-        localStorage.setItem("user", JSON.stringify(response.user));
-      }
-      console.log("✅ Login successful");
+    if (!res.ok || !payload.success) {
+      const errMsg =
+        payload.error?.message ?? payload.message ?? "Unknown API error";
+      console.error("API error:", errMsg, payload);
+      throw new Error(errMsg);
     }
 
-    return response;
+    return { data: payload as any };
   }
 
-  async register(
-    first_name: string,
-    last_name: string,
+  /* --------------------------------------------------------------- */
+  /* Auth                                                            */
+  /* --------------------------------------------------------------- */
+  async login(
+    type: "user" | "admin",
     email: string,
-    phone: string,
-    password: string
-  ) {
-    console.log("registering new user...");
-    const response = await this.request<{
-      user: any;
-    }>("/auth/register", {
+    password: string,
+    otp?: string
+  ): Promise<LoginResponse> {
+    const { data } = await this.request<LoginResponse>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({
-        first_name,
-        last_name,
-        email,
-        phone,
-        password,
-      }),
+      body: JSON.stringify({ type, email, password, otp }),
     });
 
-    if (response.success) {
-      console.log("✅ Registration successful");
-    }
-    return response;
+    this.token = data.token;
+    localStorage.setItem("auth_token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    return data;
   }
 
-  async logout() {
+  async logout(): Promise<void> {
     this.token = null;
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("user");
-    }
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
   }
 
-  // Services
-  async getServices() {
-    return this.request<any[]>("/services");
+  /* --------------------------------------------------------------- */
+  /* Services                                                        */
+  /* --------------------------------------------------------------- */
+  async getServices(): Promise<any> {
+    return this.request<any>("/booking/services");
   }
 
-  async getService(serviceId: string) {
-    return this.request<any>(`/services/${serviceId}`);
+  async getCentersForService(serviceId: string): Promise<any> {
+    return this.request<any>(`/booking/centers/${serviceId}`);
   }
 
-  // Applications
-  async submitApplication(data: any) {
-    console.log("📝 Submitting application:", data);
-    return this.request<{
-      application_id: string;
-      status: string;
-      submitted_at: string;
-      tracking_url: string;
-    }>("/applications/submit", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+  /* --------------------------------------------------------------- */
+  /* User details (prefill)                                          */
+  /* --------------------------------------------------------------- */
+  async getUserDetails(): Promise<any> {
+    return this.request<any>("/auth/me");
   }
 
-  async trackApplication(applicationId: string) {
-    return this.request<any>(`/applications/track/${applicationId}`);
-  }
-
-  async getUserApplications(userId: string) {
-    return this.request<any[]>(`/applications/user/${userId}`);
-  }
-
-  // Appointments
-  async bookAppointment(data: any) {
-    return this.request<{
-      appointment_id: string;
-      appointment_date: string;
-      status: string;
-    }>("/appointments/book", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getAvailableSlots(date: string, service: string) {
+  /* --------------------------------------------------------------- */
+  /* Dates & Slots                                                   */
+  /* --------------------------------------------------------------- */
+  async getAvailableDates(centerId: string, serviceId: string): Promise<any> {
     return this.request<any>(
-      `/appointments/slots?date=${date}&service=${service}`
+      `/booking/available-dates?centerId=${centerId}&serviceId=${serviceId}`
     );
   }
 
-  // File Uploads
-  async uploadDocument(
-    file: File,
-    applicationId: string,
-    documentType: string
-  ) {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("application_id", applicationId);
-    formData.append("document_type", documentType);
-
-    console.log("📤 Uploading document...");
-    const fullUrl = `${API_BASE_URL}/upload/secure`;
-
-    const response = await fetch(fullUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
-      body: formData,
-      mode: "cors",
-      credentials: "omit",
-    });
-
-    return response.json();
+  async getAvailableSlots(
+    centerId: string,
+    serviceId: string,
+    date: string
+  ): Promise<any> {
+    return this.request<any>(
+      `/booking/available-slots?centerId=${centerId}&serviceId=${serviceId}&date=${date}`
+    );
   }
 
+  /* --------------------------------------------------------------- */
+  /* Booking                                                         */
+  /* --------------------------------------------------------------- */
+  async bookAppointment(payload: {
+    serviceId: string;
+    centerId: string;
+    date: string;
+    slotId: string;
+    userDetails: {
+      gender: string;
+      dateOfBirth: string;
+      nationality: string;
+      passportNo: string;
+      passportExpiry: string;
+      phoneNo: string;
+    };
+  }): Promise<any> {
+    return this.request<any>("/booking/create", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
 
-  // Admin APIs
+  /* ---------------------------------------------------------------- */
+  /* -------------------------- ADMIN PANEL -------------------------- */
+  /* ---------------------------------------------------------------- */
+
+  /** @namespace admin */
   admin = {
-    getDashboardStats: () => this.request<any>("/admin/dashboard/stats"),
+    /** Dashboard stats */
+    getDashboardStats: async (): Promise<AdminStatsResponse> => {
+      const { data } = await this.request<AdminStatsResponse>(
+        "/admin/dashboard-stats"
+      );
+      return data;
+    },
 
-    getApplications: (params?: {
+    /** Applications list (with pagination & optional status filter) */
+    getApplications: async (params: {
       page?: number;
       limit?: number;
       status?: string;
-      service?: string;
-    }) => {
-      const queryString = new URLSearchParams(params as any).toString();
-      return this.request<any>(`/admin/applications?${queryString}`);
+    }): Promise<AdminApplicationsResponse> => {
+      const query = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v != null && v !== "")
+          .map(([k, v]) => [k, String(v)])
+      ).toString();
+
+      const { data } = await this.request<AdminApplicationsResponse>(
+        `/admin/applications?${query}`
+      );
+      return data;
     },
 
-    updateApplicationStatus: (
-      applicationId: string,
-      status: string,
-      notes?: string
-    ) =>
-      this.request<any>(`/admin/applications/${applicationId}/status`, {
-        method: "PUT",
-        body: JSON.stringify({ status, notes }),
-      }),
+    /** Appointments list (all filters you showed) */
+    getAppointments: async (params: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      centerId?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      search?: string;
+    }): Promise<AdminAppointmentsResponse> => {
+      const query = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v != null && v !== "")
+          .map(([k, v]) => [k, String(v)])
+      ).toString();
 
-    bulkUpdateApplications: (
-      applicationIds: string[],
-      action: string,
-      notes?: string
-    ) =>
-      this.request<any>("/admin/applications/bulk-update", {
-        method: "POST",
-        body: JSON.stringify({
-          application_ids: applicationIds,
-          action,
-          notes,
-        }),
-      }),
-
-    sendNotification: (data: any) =>
-      this.request<any>("/admin/notifications/send", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-
-    getUsers: (params?: { role?: string; page?: number }) => {
-      const queryString = new URLSearchParams(params as any).toString();
-      return this.request<any>(`/admin/users?${queryString}`);
+      const { data } = await this.request<AdminAppointmentsResponse>(
+        `/admin/appointments?${query}`
+      );
+      return data;
     },
 
-    createUser: (userData: any) =>
-      this.request<any>("/admin/users", {
-        method: "POST",
-        body: JSON.stringify(userData),
-      }),
+    getAppointmentDetails: async (
+      id: number
+    ): Promise<AdminAppointmentDetailsResponse> => {
+      const { data } = await this.request<AdminAppointmentDetailsResponse>(
+        `/admin/appointments/${id}`
+      );
+      return data;
+    },
 
-    getAnalytics: (params: {
-      period: string;
-      type: string;
-      service?: string;
-    }) => {
-      const queryString = new URLSearchParams(params as any).toString();
-      return this.request<any>(`/admin/analytics?${queryString}`);
+    /** Update appointment status */
+    updateAppointmentStatus: async (
+      id: number,
+      status: "completed" | "scheduled" | "cancled" | "no-show"
+    ): Promise<AdminUpdateStatusResponse> => {
+      const { data } = await this.request<AdminUpdateStatusResponse>(
+        `/admin/appointments/${id}/status`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ status }),
+        }
+      );
+      return data;
     },
   };
 }
 
-// Export singleton instance
+/* ------------------------------------------------------------------ */
+/* Exported singleton (recommended usage)                              */
+/* ------------------------------------------------------------------ */
 export const phpAPI = new PHPAPIClient();
 
-// Export class for creating new instances
 export default PHPAPIClient;

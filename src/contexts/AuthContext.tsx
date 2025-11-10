@@ -26,7 +26,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (
     type: string,
-    username: string,
+    email: string,
     password: string
   ) => Promise<{ success: boolean; error?: string }>;
   register: (
@@ -129,14 +129,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const login = async (
     type: string,
-    username: string,
+    email: string,
     password: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
       console.log("🔐 AuthContext: Initiating login...");
 
-      const response = await phpAPI.login(type, username, password);
+      const response = await phpAPI.login(type, email, password);
 
       if (response.success) {
         const { token: newToken, user: userData } = response;

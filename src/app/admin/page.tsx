@@ -10,7 +10,7 @@ import { phpAPI } from '@/lib/php-api-client'
 export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null) // null = checking
   const [loginData, setLoginData] = useState({
-    username: '',
+    email: '',
     password: '',
     otp: ''
   })
@@ -42,7 +42,7 @@ export default function AdminPage() {
       } else if (step === 'otp') {
         const response = await phpAPI.login(
           'admin',
-          loginData.username,
+          loginData.email,
           loginData.password,
           loginData.otp
         )
@@ -66,7 +66,7 @@ export default function AdminPage() {
     phpAPI.logout()
     setIsLoggedIn(false)
     setStep('credentials')
-    setLoginData({ username: '', password: '', otp: '' })
+    setLoginData({ email: '', password: '', otp: '' })
   }
 
   // Show loading while checking auth
@@ -129,8 +129,8 @@ export default function AdminPage() {
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
                       <input
                         type="text"
-                        value={loginData.username}
-                        onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                        value={loginData.email}
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                         className="w-full pl-10 pr-4 py-3 bg-white/20 border border-white/40 rounded-lg text-white placeholder-white/60 focus:ring-2 focus:ring-saffron focus:border-transparent"
                         placeholder="Enter your officer ID"
                         required
