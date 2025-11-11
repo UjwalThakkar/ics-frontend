@@ -119,3 +119,41 @@ export interface AdminAppointmentDetailsResponse {
 export interface AdminUpdateStatusResponse {
   message: string;
 }
+
+// src/types/admin.ts (append)
+export interface TimeSlot {
+  slot_id: number;
+  start_time: string;
+  end_time: string;
+  duration: number;
+  is_active: 1 | 0;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SlotSettings {
+  slot_duration_minutes: number;
+  max_appointments_per_slot: number;
+  advance_booking_days: number;
+  cancellation_hours: number;
+}
+
+export interface AdminTimeSlotsResponse {
+  slots: TimeSlot[];
+  settings: SlotSettings;
+  pagination: Pagination;
+}
+
+export interface AdminToggleSlotResponse {
+  message: string;
+  is_active: boolean;
+}
+
+export interface AdminBulkToggleResponse {
+  message: string;
+}
+
+export interface AdminCreateSlotResponse {
+  slot_id: number;
+  message: string;
+}

@@ -10,8 +10,20 @@ import ApplicationFilters from "@/components/admin/applications/ApplicationFilte
 import ApplicationsTable from "@/components/admin/applications/ApplicationsTable";
 import AppointmentFilters from "@/components/admin/appointments/AppointmentFilters";
 import AppointmentsTable from "@/components/admin/appointments/AppointmentsTable";
-import { Stats, Application, Appointment, Pagination } from "@/types/admin";
+import {
+  Stats,
+  Application,
+  Appointment,
+  Pagination,
+  TimeSlot,
+  SlotSettings,
+} from "@/types/admin";
 import { Loader2, AlertCircle, Calendar, FileText } from "lucide-react";
+import SlotsTable from "./admin/slots/SlotsTable";
+import CreateSlotModal from "./admin/slots/CreateSlotModal";
+import BulkToggleModal from "./admin/slots/BulkToggleModal";
+import SlotSettingsForm from "./admin/slots/SlotSettingsForm";
+import BulkCreateSlotsModal from "./admin/slots/BulkCreateSlotsModal";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -41,11 +53,19 @@ export default function AdminDashboard() {
   const [apptDateFrom, setApptDateFrom] = useState("");
   const [apptDateTo, setApptDateTo] = useState("");
 
+  const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [slotSettings, setSlotSettings] = useState<SlotSettings | null>(null);
+  const [slotPagination, setSlotPagination] = useState<Pagination | null>(null);
+  const [slotPage, setSlotPage] = useState(1);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
+
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const refreshAppointments = () => {
-    console.log("refresh called");
-    setRefreshTrigger((p) => p + 1);
-  };
+
+  const refreshAppointments = () => setRefreshTrigger((p) => p + 1);
+  const refreshSlots = () => setRefreshTrigger((p) => p + 1);
 
   // Auth check
   useEffect(() => {
@@ -131,6 +151,79 @@ export default function AdminDashboard() {
     apptSearch,
     refreshTrigger,
   ]);
+
+  // Fetch slots
+  useEffect(() => {
+    if (activeTab !== "slots") return;
+
+    const fetch = async () => {
+      setLoadingSlots(true);
+      try {
+        const res = await phpAPI.admin.getTimeSlots({
+          page: slotPage,
+          limit: 10,
+        });
+        setSlots(res.slots);
+        setSlotSettings(res.settings);
+        setSlotPagination(res.pagination);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    fetch();
+  }, [activeTab, slotPage, refreshTrigger]);
+
+  // Handlers
+
+  const handleBulkCreate = async (
+    start: string,
+    end: string,
+    duration?: number
+  ): Promise<{ message: string; skipped: number }> => {
+    try {
+      const res = await phpAPI.admin.bulkCreateSlots({
+        start_time: start,
+        end_time: end,
+        duration,
+      });
+
+      // Show toast
+      const msg =
+        res.skipped > 0
+          ? `${res.message}, ${res.skipped} overlapping slot(s) skipped`
+          : res.message;
+
+      alert(msg);
+      refreshSlots();
+
+      // Return the data for modal (if needed)
+      return { message: res.message, skipped: res.skipped };
+    } catch (err: any) {
+      alert(err.message || "Failed to create slots");
+      throw err; // re-throw to satisfy Promise return
+    }
+  };
+
+  const handleCreateSlot = async (start: string, end: string) => {
+    await phpAPI.admin.createSlot({
+      start_time: start,
+      end_time: end,
+      is_active: 1,
+    });
+    refreshSlots();
+  };
+
+  const handleUpdateSettings = async (s: Partial<SlotSettings>) => {
+    await phpAPI.admin.updateSlotSettings(s);
+    refreshSlots();
+  };
+
+  const handleBulkToggle = async (ids: number[], activate: boolean) => {
+    await phpAPI.admin.bulkToggleSlots(ids, activate);
+    refreshSlots();
+  };
 
   const exportData = () => {
     const data = {
@@ -243,6 +336,80 @@ export default function AdminDashboard() {
                 currentPage={apptPage}
                 setCurrentPage={setApptPage}
                 refresh={refreshAppointments}
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === "slots" && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Slot Settings
+              </h2>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  + New Slot
+                </button>
+                <button
+                  onClick={() => setShowBulkCreateModal(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Bulk Create
+                </button>
+                <button
+                  onClick={() => setShowBulkModal(true)}
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                >
+                  Bulk Toggle
+                </button>
+              </div>
+            </div>
+
+            {slotSettings && (
+              <div className="mb-8">
+                <SlotSettingsForm
+                  settings={slotSettings}
+                  onUpdate={handleUpdateSettings}
+                />
+              </div>
+            )}
+
+            {loadingSlots ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <SlotsTable
+                slots={slots}
+                pagination={slotPagination}
+                currentPage={slotPage}
+                setCurrentPage={setSlotPage}
+                refresh={refreshSlots}
+              />
+            )}
+
+            {showCreateModal && (
+              <CreateSlotModal
+                onClose={() => setShowCreateModal(false)}
+                onCreate={handleCreateSlot}
+              />
+            )}
+            {showBulkModal && (
+              <BulkToggleModal
+                slots={slots}
+                onClose={() => setShowBulkModal(false)}
+                onBulkToggle={handleBulkToggle}
+              />
+            )}
+            {showBulkCreateModal && slotSettings && (
+              <BulkCreateSlotsModal
+                defaultDuration={slotSettings.slot_duration_minutes}
+                onClose={() => setShowBulkCreateModal(false)}
+                onCreate={handleBulkCreate} // ← now async
               />
             )}
           </>

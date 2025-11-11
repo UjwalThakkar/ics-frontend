@@ -45,6 +45,11 @@ import {
   AdminAppointmentsResponse,
   AdminAppointmentDetailsResponse,
   AdminUpdateStatusResponse,
+  AdminCreateSlotResponse,
+  SlotSettings,
+  AdminBulkToggleResponse,
+  AdminToggleSlotResponse,
+  AdminTimeSlotsResponse,
 } from "@/types/admin";
 
 /* ------------------------------------------------------------------ */
@@ -254,6 +259,119 @@ class PHPAPIClient {
         }
       );
       return data;
+    },
+
+    getTimeSlots: async (params: {
+      page?: number;
+      limit?: number;
+    }): Promise<AdminTimeSlotsResponse> => {
+      const query = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v != null)
+          .map(([k, v]) => [k, String(v)])
+      ).toString();
+
+      const { data } = await this.request<AdminTimeSlotsResponse>(
+        `/admin/time-slots?${query}`
+      );
+      return data;
+    },
+
+    /** Toggle single slot */
+    toggleSlot: async (id: number): Promise<AdminToggleSlotResponse> => {
+      const { data } = await this.request<AdminToggleSlotResponse>(
+        `/admin/time-slots/${id}/toggle`,
+        {
+          method: "PUT",
+        }
+      );
+      return data;
+    },
+
+    /** Bulk toggle */
+    bulkToggleSlots: async (
+      slot_ids: number[],
+      activate: boolean
+    ): Promise<AdminBulkToggleResponse> => {
+      const { data } = await this.request<AdminBulkToggleResponse>(
+        "/admin/time-slots/bulk-toggle",
+        {
+          method: "POST",
+          body: JSON.stringify({ slot_ids, activate }),
+        }
+      );
+      return data;
+    },
+
+    /** Create new slot */
+    createSlot: async (payload: {
+      start_time: string;
+      end_time: string;
+      is_active?: 1 | 0;
+    }): Promise<AdminCreateSlotResponse> => {
+      const { data } = await this.request<AdminCreateSlotResponse>(
+        "/admin/time-slots",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
+      return data;
+    },
+
+    /** Update global settings */
+    updateSlotSettings: async (
+      settings: Partial<SlotSettings>
+    ): Promise<{ message: string }> => {
+      const { data } = await this.request<{ message: string }>(
+        "/admin/time-slots/settings",
+        {
+          method: "PUT",
+          body: JSON.stringify(settings),
+        }
+      );
+      return data;
+    },
+
+    /** Delete a time slot */
+    deleteSlot: async (id: number): Promise<{ message: string }> => {
+      const { data } = await this.request<{ message: string }>(
+        `/admin/time-slots/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      return data;
+    },
+
+    /** Bulk create slots – now returns skipped count */
+    bulkCreateSlots: async (payload: {
+      start_time: string;
+      end_time: string;
+      duration?: number;
+    }): Promise<{
+      message: string;
+      slots: {
+        slot_id: number;
+        start_time: string;
+        end_time: string;
+        duration: number;
+      }[];
+      skipped: number;
+    }> => {
+      const { data } = await this.request<any>(
+        "/admin/time-slots/bulk-create",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
+      // Normalize response
+      return {
+        message: data.message,
+        slots: data.slots || [],
+        skipped: data.skipped || 0,
+      };
     },
   };
 }

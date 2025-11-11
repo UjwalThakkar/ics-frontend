@@ -1,5 +1,5 @@
 // src/components/admin/layout/AdminSidebar.tsx
-import { Home, FileText, Calendar, Users, Settings } from "lucide-react";
+import { Home, FileText, Calendar, Users, Settings, Clock } from "lucide-react";
 
 const tabs = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -7,6 +7,7 @@ const tabs = [
   { id: "appointments", label: "Appointments", icon: Calendar },
   { id: "users", label: "Users", icon: Users },
   { id: "settings", label: "Settings", icon: Settings },
+  { id: "slots", label: "Slot Settings", icon: Clock },
 ];
 
 interface Props {
