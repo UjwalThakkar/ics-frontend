@@ -188,66 +188,66 @@ class InputValidator {
 // RATE LIMITING & DDOS PROTECTION
 // =============================================
 
-class RateLimitManager {
-  private static attempts: Map<string, { count: number; lastAttempt: number }> = new Map()
+// class RateLimitManager {
+//   private static attempts: Map<string, { count: number; lastAttempt: number }> = new Map()
 
-  /**
-   * Check if IP is rate limited
-   */
-  static isRateLimited(ip: string, maxAttempts: number = 5, windowMs: number = 900000): boolean {
-    const now = Date.now()
-    const attempt = this.attempts.get(ip)
+//   /**
+//    * Check if IP is rate limited
+//    */
+//   static isRateLimited(ip: string, maxAttempts: number = 5, windowMs: number = 900000): boolean {
+//     const now = Date.now()
+//     const attempt = this.attempts.get(ip)
 
-    if (!attempt) {
-      this.attempts.set(ip, { count: 1, lastAttempt: now })
-      return false
-    }
+//     if (!attempt) {
+//       this.attempts.set(ip, { count: 1, lastAttempt: now })
+//       return false
+//     }
 
-    // Reset if window has passed
-    if (now - attempt.lastAttempt > windowMs) {
-      this.attempts.set(ip, { count: 1, lastAttempt: now })
-      return false
-    }
+//     // Reset if window has passed
+//     if (now - attempt.lastAttempt > windowMs) {
+//       this.attempts.set(ip, { count: 1, lastAttempt: now })
+//       return false
+//     }
 
-    // Increment attempts
-    attempt.count++
-    attempt.lastAttempt = now
+//     // Increment attempts
+//     attempt.count++
+//     attempt.lastAttempt = now
 
-    return attempt.count > maxAttempts
-  }
+//     return attempt.count > maxAttempts
+//   }
 
-  /**
-   * Add failed attempt
-   */
-  static addFailedAttempt(ip: string): void {
-    const now = Date.now()
-    const attempt = this.attempts.get(ip) || { count: 0, lastAttempt: now }
-    attempt.count++
-    attempt.lastAttempt = now
-    this.attempts.set(ip, attempt)
-  }
+//   /**
+//    * Add failed attempt
+//    */
+//   static addFailedAttempt(ip: string): void {
+//     const now = Date.now()
+//     const attempt = this.attempts.get(ip) || { count: 0, lastAttempt: now }
+//     attempt.count++
+//     attempt.lastAttempt = now
+//     this.attempts.set(ip, attempt)
+//   }
 
-  /**
-   * Reset attempts for IP
-   */
-  static resetAttempts(ip: string): void {
-    this.attempts.delete(ip)
-  }
+//   /**
+//    * Reset attempts for IP
+//    */
+//   static resetAttempts(ip: string): void {
+//     this.attempts.delete(ip)
+//   }
 
-  /**
-   * Clean old entries
-   */
-  static cleanup(): void {
-    const now = Date.now()
-    const windowMs = 900000 // 15 minutes
+//   /**
+//    * Clean old entries
+//    */
+//   static cleanup(): void {
+//     const now = Date.now()
+//     const windowMs = 900000 // 15 minutes
 
-    for (const [ip, attempt] of this.attempts.entries()) {
-      if (now - attempt.lastAttempt > windowMs) {
-        this.attempts.delete(ip)
-      }
-    }
-  }
-}
+//     for (const [ip, attempt] of this.attempts.entries()) {
+//       if (now - attempt.lastAttempt > windowMs) {
+//         this.attempts.delete(ip)
+//       }
+//     }
+//   }
+// }
 
 // =============================================
 // SESSION MANAGEMENT
@@ -536,7 +536,6 @@ class SecurityMiddleware {
 export {
   SecurityUtils,
   InputValidator,
-  RateLimitManager,
   SessionManager,
   SecurityHeaders,
   SecurityLogger,

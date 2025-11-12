@@ -20,12 +20,14 @@ const Header = () => {
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY
-      setIsScrolled(scrollTop > 100)
+      setIsScrolled(scrollTop > 70)
     }
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
   const toggleServices = () => setIsServicesOpen(!isServicesOpen)
@@ -76,7 +78,7 @@ const Header = () => {
       {/* Main Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4">
-          <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'py-2' : 'py-4'}`}>
+          <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'py-4' : 'py-4'}`}>
             {/* Logo and Title */}
             <Link href="/" className="flex items-center space-x-4">
               {/* Indian Emblem */}
@@ -85,10 +87,10 @@ const Header = () => {
               </div>
 
               <div className="flex flex-col">
-                <h1 className={`font-bold text-navy transition-all duration-300 ${isScrolled ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'}`}>
+                <h1 className={`font-bold text-navy transition-all duration-300 ${isScrolled ? 'text-lg md:text-2xl' : 'text-xl md:text-2xl'}`}>
                   Consulate General of India
                 </h1>
-                <p className={`text-gray-600 transition-all duration-300 ${isScrolled ? 'text-xs' : 'text-sm'}`}>Johannesburg (South Africa)</p>
+                <p className={`text-gray-600 transition-all duration-300 ${isScrolled ? 'text-sx' : 'text-sx'}`}>Johannesburg (South Africa)</p>
                 <p className={`text-saffron font-medium transition-all duration-300 ${isScrolled ? 'hidden' : 'text-xs'}`}>Indian Consular Services</p>
               </div>
             </Link>
