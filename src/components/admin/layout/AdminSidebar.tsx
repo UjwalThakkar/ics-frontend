@@ -6,8 +6,9 @@ const tabs = [
   { id: "applications", label: "Applications", icon: FileText },
   { id: "appointments", label: "Appointments", icon: Calendar },
   { id: "users", label: "Users", icon: Users },
-  { id: "settings", label: "Settings", icon: Settings },
+  { id: "services", label: "Services", icon: FileText },
   { id: "slots", label: "Slot Settings", icon: Clock },
+  // { id: "settings", label: "Settings", icon: Settings },
 ];
 
 interface Props {

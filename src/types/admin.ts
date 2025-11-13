@@ -157,3 +157,45 @@ export interface AdminCreateSlotResponse {
   slot_id: number;
   message: string;
 }
+
+// src/types/admin.ts (append)
+export interface ServiceFeeObject {
+  [key: string]: number; // e.g. { standard: 50, express: 100 }
+}
+
+export interface ServiceFeeArray {
+  type: string;
+  amount: number;
+}
+
+export type ServiceFee = ServiceFeeObject | ServiceFeeArray[];
+
+export interface Service {
+  service_id: number;
+  category: string;
+  title: string;
+  description: string;
+  processing_time: string;
+  fees: ServiceFee;
+  required_documents: string[];
+  eligibility_requirements: string[];
+  is_active: 1 | 0;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminServicesResponse {
+  services: Service[];
+  pagination: Pagination;
+}
+
+export interface AdminCreateServiceResponse {
+  serviceId: number;
+  message: string;
+}
+
+export interface AdminToggleServiceResponse {
+  message: string;
+  isActive: boolean;
+}

@@ -17,6 +17,7 @@ import {
   Pagination,
   TimeSlot,
   SlotSettings,
+  Service,
 } from "@/types/admin";
 import { Loader2, AlertCircle, Calendar, FileText } from "lucide-react";
 import SlotsTable from "./admin/slots/SlotsTable";
@@ -24,6 +25,8 @@ import CreateSlotModal from "./admin/slots/CreateSlotModal";
 import BulkToggleModal from "./admin/slots/BulkToggleModal";
 import SlotSettingsForm from "./admin/slots/SlotSettingsForm";
 import BulkCreateSlotsModal from "./admin/slots/BulkCreateSlotsModal";
+import CreateServiceModal from "./admin/services/CreateServiceModal";
+import ServicesTable from "./admin/services/ServicesTable";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -62,10 +65,19 @@ export default function AdminDashboard() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
 
+  // service state
+  const [services, setServices] = useState<Service[]>([]);
+  const [servicePagination, setServicePagination] = useState<Pagination | null>(
+    null
+  );
+  const [servicePage, setServicePage] = useState(1);
+  const [showCreateService, setShowCreateService] = useState(false);
+
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const refreshAppointments = () => setRefreshTrigger((p) => p + 1);
   const refreshSlots = () => setRefreshTrigger((p) => p + 1);
+  const refreshServices = () => setRefreshTrigger((p) => p + 1);
 
   // Auth check
   useEffect(() => {
@@ -74,20 +86,41 @@ export default function AdminDashboard() {
   }, []);
 
   // Fetch Stats
+  // useEffect(() => {
+  //   const fetchStats = async () => {
+  //     setLoadingStats(true);
+  //     try {
+  //       const res = await phpAPI.admin.getDashboardStats();
+  //       if (res.success) setStats(res.stats);
+  //     } catch (err: any) {
+  //       setError(err.message || "Failed to load stats");
+  //     } finally {
+  //       setLoadingStats(false);
+  //     }
+  //   };
+  //   fetchStats();
+  // }, []);
+
   useEffect(() => {
-    const fetchStats = async () => {
-      setLoadingStats(true);
+    if (activeTab !== "services") return;
+
+    const fetch = async () => {
+      setLoadingAppts(true); // reuse loading state
       try {
-        const res = await phpAPI.admin.getDashboardStats();
-        if (res.success) setStats(res.stats);
+        const res = await phpAPI.admin.getServices({
+          page: servicePage,
+          limit: 10,
+        });
+        setServices(res.services);
+        setServicePagination(res.pagination);
       } catch (err: any) {
-        setError(err.message || "Failed to load stats");
+        setError(err.message);
       } finally {
-        setLoadingStats(false);
+        setLoadingAppts(false);
       }
     };
-    fetchStats();
-  }, []);
+    fetch();
+  }, [activeTab, servicePage, refreshTrigger]);
 
   // Fetch Applications
   useEffect(() => {
@@ -213,6 +246,11 @@ export default function AdminDashboard() {
       is_active: 1,
     });
     refreshSlots();
+  };
+
+  const handleCreateService = async (data: any) => {
+    await phpAPI.admin.createService(data);
+    refreshServices();
   };
 
   const handleUpdateSettings = async (s: Partial<SlotSettings>) => {
@@ -410,6 +448,35 @@ export default function AdminDashboard() {
                 defaultDuration={slotSettings.slot_duration_minutes}
                 onClose={() => setShowBulkCreateModal(false)}
                 onCreate={handleBulkCreate} // ← now async
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === "services" && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Services</h2>
+              <button
+                onClick={() => setShowCreateService(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                + New Service
+              </button>
+            </div>
+
+            <ServicesTable
+              services={services}
+              pagination={servicePagination}
+              currentPage={servicePage}
+              setCurrentPage={setServicePage}
+              refresh={refreshServices}
+            />
+
+            {showCreateService && (
+              <CreateServiceModal
+                onClose={() => setShowCreateService(false)}
+                onCreate={handleCreateService}
               />
             )}
           </>

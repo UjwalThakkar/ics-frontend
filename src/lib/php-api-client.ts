@@ -50,6 +50,10 @@ import {
   AdminBulkToggleResponse,
   AdminToggleSlotResponse,
   AdminTimeSlotsResponse,
+  AdminToggleServiceResponse,
+  ServiceFee,
+  AdminCreateServiceResponse,
+  AdminServicesResponse,
 } from "@/types/admin";
 
 /* ------------------------------------------------------------------ */
@@ -372,6 +376,95 @@ class PHPAPIClient {
         slots: data.slots || [],
         skipped: data.skipped || 0,
       };
+    },
+    getServices: async (params: {
+      page?: number;
+      limit?: number;
+    }): Promise<AdminServicesResponse> => {
+      const query = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v != null)
+          .map(([k, v]) => [k, String(v)])
+      ).toString();
+
+      const { data } = await this.request<AdminServicesResponse>(
+        `/admin/services?${query}`
+      );
+      return data;
+    },
+
+    /** Create service */
+    createService: async (payload: {
+      category: string;
+      title: string;
+      description?: string;
+      processing_time?: string;
+      fees: ServiceFee;
+      required_documents?: string[];
+      eligibility_requirements?: string[];
+      is_active?: 1 | 0;
+      display_order?: number;
+    }): Promise<AdminCreateServiceResponse> => {
+      const { data } = await this.request<AdminCreateServiceResponse>(
+        "/admin/services",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
+      return data;
+    },
+
+    /** Update service */
+    updateService: async (
+      id: number,
+      payload: Partial<{
+        title: string;
+        description: string;
+        processing_time: string;
+        fees: ServiceFee;
+        required_documents: string[];
+        eligibility_requirements: string[];
+        display_order: number;
+      }>
+    ): Promise<{ message: string }> => {
+      const { data } = await this.request<{ message: string }>(
+        `/admin/services/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        }
+      );
+      return data;
+    },
+
+    /** Toggle service */
+    toggleService: async (id: number): Promise<AdminToggleServiceResponse> => {
+      const { data } = await this.request<AdminToggleServiceResponse>(
+        `/admin/services/${id}/toggle`,
+        {
+          method: "PUT",
+        }
+      );
+      return data;
+    },
+
+    /** Delete service */
+    deleteService: async (id: number): Promise<{ message: string }> => {
+      const { data } = await this.request<{ message: string }>(
+        `/admin/services/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      return data;
+    },
+    
+    getService: async (id: number): Promise<{ service: Service }> => {
+      const { data } = await this.request<{ service: Service }>(
+        `/admin/services/${id}`
+      );
+      return data;
     },
   };
 }
