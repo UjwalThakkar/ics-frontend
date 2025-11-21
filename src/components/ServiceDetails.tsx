@@ -1,7 +1,8 @@
-'use client'
+// components/ServiceDetails.tsx (no major changes needed, as it receives service prop)
+"use client";
 
-import React from 'react'
-import Link from 'next/link'
+import React from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   Clock,
@@ -13,29 +14,30 @@ import {
   MapPin,
   CalendarDays,
   Download,
-  AlertCircle
-} from 'lucide-react'
+  AlertCircle,
+} from "lucide-react";
 
 interface Service {
-  id: string
-  category: string
-  title: string
-  description: string
-  processingTime: string
+  id?: string; // Adjust based on API
+  serviceId?: string;
+  category: string;
+  title: string;
+  description: string;
+  processingTime?: string;
+  processing_time?: string; // If API uses snake_case
   fees: Array<{
-    description: string
-    amount: number
-    currency: string
-  }>
-  requiredDocuments: string[]
-  eligibilityRequirements: string[]
-  isActive: boolean
+    type: string;
+    amount: number;
+    currency: string;
+  }>;
+  required_documents: string[];
+  eligibility_requirements: string[];
+  isActive: boolean;
 }
 
 interface ServiceDetailsProps {
-  service: Service
+  service: Service;
 }
-
 const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -52,8 +54,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
 
           <div className="max-w-4xl">
             <div className="text-sm text-blue-200 mb-2">{service.category}</div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">{service.title}</h1>
-            <p className="text-xl text-blue-100 leading-relaxed">{service.description}</p>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">
+              {service.title}
+            </h1>
+            <p className="text-xl text-blue-100 leading-relaxed">
+              {service.description}
+            </p>
           </div>
         </div>
       </div>
@@ -62,17 +68,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-
             {/* Service Overview */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Service Overview</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                Service Overview
+              </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex items-start space-x-3">
                   <Clock className="h-6 w-6 text-blue-600 mt-1" />
                   <div>
-                    <h3 className="font-medium text-gray-900">Processing Time</h3>
-                    <p className="text-gray-600">{service.processingTime}</p>
+                    <h3 className="font-medium text-gray-900">
+                      Processing Time
+                    </h3>
+                    <p className="text-gray-600">{service.processing_time}</p>
                   </div>
                 </div>
 
@@ -83,7 +92,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
                     <div className="text-gray-600">
                       {service.fees.map((fee, index) => (
                         <div key={index}>
-                          {fee.amount > 0 ? `${fee.currency} ${fee.amount}` : 'No fee'} - {fee.description}
+                          {fee.type} -{" "}
+                          {fee.amount > 0
+                            ? `${fee.currency || "ZAR"} ${fee.amount}`
+                            : "No fee"}
                         </div>
                       ))}
                     </div>
@@ -100,7 +112,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
               </h2>
 
               <div className="space-y-3">
-                {service.requiredDocuments.map((doc, index) => (
+                {service.required_documents.map((doc, index) => (
                   <div key={index} className="flex items-start space-x-3">
                     <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-700">{doc}</span>
@@ -112,8 +124,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
                   <div className="text-sm text-yellow-800">
-                    <strong>Important:</strong> All documents must be original or attested copies.
-                    Please bring 2 sets of photocopies of all documents.
+                    <strong>Important:</strong> All documents must be original
+                    or attested copies. Please bring 2 sets of photocopies of
+                    all documents.
                   </div>
                 </div>
               </div>
@@ -121,10 +134,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
 
             {/* Eligibility Requirements */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Eligibility Requirements</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                Eligibility Requirements
+              </h2>
 
               <div className="space-y-3">
-                {service.eligibilityRequirements.map((req, index) => (
+                {service.eligibility_requirements.map((req, index) => (
                   <div key={index} className="flex items-start space-x-3">
                     <CheckCircle className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-700">{req}</span>
@@ -135,46 +150,80 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
 
             {/* Application Process */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Application Process</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                Application Process
+              </h2>
 
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    1
+                  </div>
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-1">Prepare Documents</h3>
-                    <p className="text-gray-600">Gather all required documents and make attested copies.</p>
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      Prepare Documents
+                    </h3>
+                    <p className="text-gray-600">
+                      Gather all required documents and make attested copies.
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">2</div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    2
+                  </div>
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-1">Book Appointment</h3>
-                    <p className="text-gray-600">Schedule an appointment through our online booking system.</p>
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      Book Appointment
+                    </h3>
+                    <p className="text-gray-600">
+                      Schedule an appointment through our online booking system.
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">3</div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    3
+                  </div>
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-1">Submit Application</h3>
-                    <p className="text-gray-600">Visit the consulate with your documents and application form.</p>
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      Submit Application
+                    </h3>
+                    <p className="text-gray-600">
+                      Visit the consulate with your documents and application
+                      form.
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">4</div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    4
+                  </div>
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-1">Track Progress</h3>
-                    <p className="text-gray-600">Monitor your application status online using your reference number.</p>
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      Track Progress
+                    </h3>
+                    <p className="text-gray-600">
+                      Monitor your application status online using your
+                      reference number.
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">5</div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    5
+                  </div>
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-1">Collect Documents</h3>
-                    <p className="text-gray-600">Receive notification and collect your processed documents.</p>
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      Collect Documents
+                    </h3>
+                    <p className="text-gray-600">
+                      Receive notification and collect your processed documents.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -183,10 +232,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Quick Actions
+              </h3>
 
               <div className="space-y-3">
                 <Link
@@ -220,7 +270,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
 
             {/* Contact Information */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Contact Information
+              </h3>
 
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
@@ -235,7 +287,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
                   <Mail className="h-5 w-5 text-blue-600 mt-1" />
                   <div>
                     <div className="font-medium text-gray-900">Email</div>
-                    <div className="text-gray-600">consular.johannesburg@mea.gov.in</div>
+                    <div className="text-gray-600">
+                      consular.johannesburg@mea.gov.in
+                    </div>
                   </div>
                 </div>
 
@@ -244,7 +298,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
                   <div>
                     <div className="font-medium text-gray-900">Address</div>
                     <div className="text-gray-600">
-                      Consulate General of India<br />
+                      Consulate General of India
+                      <br />
                       Johannesburg, South Africa
                     </div>
                   </div>
@@ -254,7 +309,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
 
             {/* Office Hours */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Office Hours</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Office Hours
+              </h3>
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -281,9 +338,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
               <div className="flex items-start space-x-2">
                 <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
                 <div className="text-sm">
-                  <div className="font-medium text-red-800 mb-1">Important Notice</div>
+                  <div className="font-medium text-red-800 mb-1">
+                    Important Notice
+                  </div>
                   <div className="text-red-700">
-                    All applications must be submitted in person. Appointment booking is mandatory to avoid waiting time.
+                    All applications must be submitted in person. Appointment
+                    booking is mandatory to avoid waiting time.
                   </div>
                 </div>
               </div>
@@ -292,7 +352,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ service }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ServiceDetails
+export default ServiceDetails;

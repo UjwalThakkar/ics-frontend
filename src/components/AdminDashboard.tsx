@@ -293,11 +293,20 @@ export default function AdminDashboard() {
       <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 p-8">
         {activeTab === "dashboard" && (
-          <DashboardOverview
-            stats={stats}
-            loading={loadingStats}
-            error={error}
-          />
+          // <DashboardOverview
+          //   stats={stats}
+          //   loading={loadingStats}
+          //   error={error}
+          // />
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}{" "}
+              Management
+            </h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-gray-600">Coming soon...</p>
+            </div>
+          </div>
         )}
 
         {activeTab === "applications" && (
