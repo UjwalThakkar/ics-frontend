@@ -103,6 +103,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         } else {
           console.error("❌ Login failed:", result.error);
           setError(result.error || "Login failed. Please try again.");
+          console.log(result)
         }
       }
     } catch (err: any) {
