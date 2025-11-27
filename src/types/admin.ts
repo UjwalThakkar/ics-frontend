@@ -181,6 +181,7 @@ export interface Service {
   eligibility_requirements: string[];
   is_active: 1 | 0;
   display_order: number;
+  center_ids?: number[];
   created_at: string;
   updated_at: string;
 }
@@ -198,4 +199,24 @@ export interface AdminCreateServiceResponse {
 export interface AdminToggleServiceResponse {
   message: string;
   isActive: boolean;
+}
+
+export interface Center {
+  center_id: number;
+  name: string;
+  city: string;
+  address?: string;
+  state?: string;
+  country?: string;
+  phone?: string;
+  // add any other fields your GET /centers/active endpoint returns
+}
+
+export interface Counter {
+  counter_id: number;
+  center_id: number;
+  counter_name: string;
+  service_handled: number[];
+  is_active: 0 | 1;
+  updated_at?: string;
 }

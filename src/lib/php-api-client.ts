@@ -54,6 +54,7 @@ import {
   ServiceFee,
   AdminCreateServiceResponse,
   AdminServicesResponse,
+  Service,
 } from "@/types/admin";
 
 /* ------------------------------------------------------------------ */
@@ -459,10 +460,54 @@ class PHPAPIClient {
       );
       return data;
     },
-    
+
     getService: async (id: number): Promise<{ service: Service }> => {
       const { data } = await this.request<{ service: Service }>(
         `/admin/services/${id}`
+      );
+      return data;
+    },
+
+    getActiveCenters: async (): Promise<{
+      centers: { center_id: number; name: string; city: string }[];
+    }> => {
+      const { data } = await this.request<any>(`/centers`);
+      return { centers: data.centers || data }; // adjust based on actual response shape
+    },
+    getCounters: async (): Promise<{ counters: Counter[] }> => {
+      const { data } = await this.request<{ counters: Counter[] }>(
+        "/admin/counters"
+      );
+      return data;
+    },
+
+    toggleCounter: async (
+      id: number
+    ): Promise<{ message: string; isActive: boolean }> => {
+      const { data } = await this.request<{
+        message: string;
+        isActive: boolean;
+      }>(`/admin/counters/${id}/toggle`, { method: "POST" });
+      return data;
+    },
+
+    getCounter: async (id: number): Promise<{ counter: Counter }> => {
+      const { data } = await this.request<{ counter: Counter }>(
+        `/admin/counters/${id}`
+      );
+      return data;
+    },
+
+    updateCounter: async (
+      id: number,
+      payload: Partial<Counter>
+    ): Promise<{ message: string }> => {
+      const { data } = await this.request<{ message: string }>(
+        `/admin/counters/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        }
       );
       return data;
     },

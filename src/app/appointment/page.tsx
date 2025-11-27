@@ -512,11 +512,11 @@ export default function AppointmentPage() {
                           {categoryServices.length} service
                           {categoryServices.length > 1 ? "s" : ""} available
                         </p>
-                        {selectedService?.category === category && (
+                        {/* {selectedService?.category === category && (
                           <p className="mt-4 text-sm font-medium text-orange-600">
                             Selected: {selectedService.title}
                           </p>
-                        )}
+                        )} */}
                       </button>
                     );
                   })}

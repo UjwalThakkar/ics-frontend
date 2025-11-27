@@ -27,6 +27,7 @@ import SlotSettingsForm from "./admin/slots/SlotSettingsForm";
 import BulkCreateSlotsModal from "./admin/slots/BulkCreateSlotsModal";
 import CreateServiceModal from "./admin/services/CreateServiceModal";
 import ServicesTable from "./admin/services/ServicesTable";
+import CountersTable from "./admin/counters/CountersTable";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -73,16 +74,41 @@ export default function AdminDashboard() {
   const [servicePage, setServicePage] = useState(1);
   const [showCreateService, setShowCreateService] = useState(false);
 
+  // NEW: Counters
+  const [counters, setCounters] = useState<Counter[]>([]);
+  const [loadingCounters, setLoadingCounters] = useState(false);
+
+  // NEW: Global centers (fetched once)
+  const [centers, setCenters] = useState<Center[]>([]);
+  const [loadingGlobalCenters, setLoadingGlobalCenters] = useState(true);
+
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const refreshAppointments = () => setRefreshTrigger((p) => p + 1);
   const refreshSlots = () => setRefreshTrigger((p) => p + 1);
   const refreshServices = () => setRefreshTrigger((p) => p + 1);
+  const refreshCounters = () => setRefreshTrigger((p) => p + 1);
 
   // Auth check
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
     if (!token) window.location.href = "/admin";
+  }, []);
+
+  // Fetch global centers once
+  useEffect(() => {
+    const fetchCenters = async () => {
+      setLoadingGlobalCenters(true);
+      try {
+        const res = await phpAPI.admin.getActiveCenters();
+        setCenters(res.centers || []);
+      } catch {
+        setError("Failed to load centers");
+      } finally {
+        setLoadingGlobalCenters(false);
+      }
+    };
+    fetchCenters();
   }, []);
 
   // Fetch Stats
@@ -121,6 +147,24 @@ export default function AdminDashboard() {
     };
     fetch();
   }, [activeTab, servicePage, refreshTrigger]);
+
+  // NEW: Fetch Counters
+  useEffect(() => {
+    if (activeTab !== "counters") return;
+
+    const fetch = async () => {
+      setLoadingCounters(true);
+      try {
+        const res = await phpAPI.admin.getCounters();
+        setCounters(res.counters || []);
+      } catch {
+        setError("Failed to load counters");
+      } finally {
+        setLoadingCounters(false);
+      }
+    };
+    fetch();
+  }, [activeTab, refreshTrigger]);
 
   // Fetch Applications
   useEffect(() => {
@@ -248,9 +292,13 @@ export default function AdminDashboard() {
     refreshSlots();
   };
 
-  const handleCreateService = async (data: any) => {
-    await phpAPI.admin.createService(data);
-    refreshServices();
+  const handleCreateService = async (payload: any) => {
+    try {
+      await phpAPI.admin.createService(payload);
+      refreshServices();
+    } catch {
+      alert("Failed to create service");
+    }
   };
 
   const handleUpdateSettings = async (s: Partial<SlotSettings>) => {
@@ -486,6 +534,27 @@ export default function AdminDashboard() {
               <CreateServiceModal
                 onClose={() => setShowCreateService(false)}
                 onCreate={handleCreateService}
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === "counters" && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Counters</h2>
+              {/* No create button, as no API */}
+            </div>
+
+            {loadingCounters || loadingGlobalCenters ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <CountersTable
+                counters={counters}
+                centers={centers}
+                refresh={refreshCounters}
               />
             )}
           </>

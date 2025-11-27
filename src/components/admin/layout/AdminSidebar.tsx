@@ -1,13 +1,22 @@
 // src/components/admin/layout/AdminSidebar.tsx
-import { Home, FileText, Calendar, Users, Settings, Clock } from "lucide-react";
+import {
+  Home,
+  FileText,
+  Calendar,
+  Users,
+  Settings,
+  Clock,
+  Table,
+} from "lucide-react";
 
 const tabs = [
-  { id: "dashboard", label: "Dashboard", icon: Home },
+  // { id: "dashboard", label: "Dashboard", icon: Home },
   { id: "applications", label: "Applications", icon: FileText },
   { id: "appointments", label: "Appointments", icon: Calendar },
   { id: "users", label: "Users", icon: Users },
   { id: "services", label: "Services", icon: FileText },
   { id: "slots", label: "Slot Settings", icon: Clock },
+  { id: "counters", label: "Counter Settings", icon: Table },
   // { id: "settings", label: "Settings", icon: Settings },
 ];
 
