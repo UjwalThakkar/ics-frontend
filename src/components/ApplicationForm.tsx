@@ -146,7 +146,7 @@ For online submission and tracking, visit: https://indianconsulate.gov.za
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg">
+    <div className="max-w-[80%] mx-auto bg-white rounded-lg shadow-lg">
       {/* Header */}
       <div className="bg-gradient-to-r from-navy to-blue-700 text-white p-6 rounded-t-lg">
         <h1 className="text-2xl font-bold mb-2">

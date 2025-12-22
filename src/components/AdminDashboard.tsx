@@ -18,6 +18,7 @@ import {
   TimeSlot,
   SlotSettings,
   Service,
+  ServiceDetails,
 } from "@/types/admin";
 import { Loader2, AlertCircle, Calendar, FileText } from "lucide-react";
 import SlotsTable from "./admin/slots/SlotsTable";
@@ -28,6 +29,8 @@ import BulkCreateSlotsModal from "./admin/slots/BulkCreateSlotsModal";
 import CreateServiceModal from "./admin/services/CreateServiceModal";
 import ServicesTable from "./admin/services/ServicesTable";
 import CountersTable from "./admin/counters/CountersTable";
+import CreateServiceDetailsModal from "./admin/service-details/CreateServiceDetailsModal";
+import ServiceDetailsTable from "./admin/service-details/ServiceDetailsTable";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -66,6 +69,14 @@ export default function AdminDashboard() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
 
+  const [serviceDetails, setServiceDetails] = useState<ServiceDetails[]>([]);
+  const [serviceDetailsPagination, setServiceDetailsPagination] =
+    useState<Pagination | null>(null);
+  const [serviceDetailsPage, setServiceDetailsPage] = useState(1);
+  const [loadingServiceDetails, setLoadingServiceDetails] = useState(false);
+  const [showCreateServiceDetails, setShowCreateServiceDetails] =
+    useState(false);
+
   // service state
   const [services, setServices] = useState<Service[]>([]);
   const [servicePagination, setServicePagination] = useState<Pagination | null>(
@@ -88,6 +99,7 @@ export default function AdminDashboard() {
   const refreshSlots = () => setRefreshTrigger((p) => p + 1);
   const refreshServices = () => setRefreshTrigger((p) => p + 1);
   const refreshCounters = () => setRefreshTrigger((p) => p + 1);
+  const refreshServiceDetails = () => setRefreshTrigger((p) => p + 1);
 
   // Auth check
   useEffect(() => {
@@ -188,8 +200,34 @@ export default function AdminDashboard() {
         setLoadingApps(false);
       }
     };
+
     fetch();
   }, [activeTab, appPage, statusFilter]);
+
+  useEffect(() => {
+    if (activeTab === "service-details") {
+      const fetchServiceDetails = async () => {
+        setLoadingServiceDetails(true);
+        setError(null);
+
+        try {
+          const response = await phpAPI.admin.getServiceDetails({
+            page: serviceDetailsPage,
+            limit: 10, // or your limit
+          });
+          setServiceDetails(response.details);
+          console.log('response for all service details', response.details)
+          setServiceDetailsPagination(response.pagination);
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoadingServiceDetails(false);
+        }
+      };
+
+      fetchServiceDetails();
+    }
+  }, [activeTab, serviceDetailsPage, refreshTrigger]);
 
   // Fetch Appointments
   useEffect(() => {
@@ -555,6 +593,44 @@ export default function AdminDashboard() {
                 counters={counters}
                 centers={centers}
                 refresh={refreshCounters}
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === "service-details" && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Service Details
+              </h2>
+              <button
+                onClick={() => setShowCreateServiceDetails(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                + New Details
+              </button>
+            </div>
+
+            {loadingServiceDetails ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <ServiceDetailsTable
+                details={serviceDetails}
+                pagination={serviceDetailsPagination}
+                currentPage={serviceDetailsPage}
+                setCurrentPage={setServiceDetailsPage}
+                refresh={refreshServiceDetails}
+              />
+            )}
+
+            {showCreateServiceDetails && (
+              <CreateServiceDetailsModal
+                onClose={() => setShowCreateServiceDetails(false)}
+                onCreate={refreshServiceDetails}
+                services={services} // Pass services for selection
               />
             )}
           </>

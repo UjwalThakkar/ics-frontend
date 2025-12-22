@@ -17,6 +17,7 @@ const tabs = [
   { id: "services", label: "Services", icon: FileText },
   { id: "slots", label: "Slot Settings", icon: Clock },
   { id: "counters", label: "Counter Settings", icon: Table },
+  { id: "service-details", label: "Service Details", icon: FileText },
   // { id: "settings", label: "Settings", icon: Settings },
 ];
 

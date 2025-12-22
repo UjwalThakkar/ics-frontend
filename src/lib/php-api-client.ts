@@ -55,6 +55,12 @@ import {
   AdminCreateServiceResponse,
   AdminServicesResponse,
   Service,
+  AdminDeleteServiceDetailsResponse,
+  AdminUpdateServiceDetailsResponse,
+  AdminCreateServiceDetailsResponse,
+  ServiceDetails,
+  AdminServiceDetailsResponse,
+  Counter,
 } from "@/types/admin";
 
 /* ------------------------------------------------------------------ */
@@ -93,7 +99,10 @@ class PHPAPIClient {
 
     if (!res.ok || !payload.success) {
       const errMsg =
-        payload.error?.message ?? payload.message ?? "Unknown API error";
+        payload.error?.message ??
+        payload.message ??
+        payload.error ??
+        "Unknown API error";
       console.error("API error:", errMsg, payload);
       throw new Error(errMsg);
     }
@@ -507,6 +516,89 @@ class PHPAPIClient {
         {
           method: "PUT",
           body: JSON.stringify(payload),
+        }
+      );
+      return data;
+    },
+
+    /** Get all service details */
+    getServiceDetails: async (params: {
+      page?: number;
+      limit?: number;
+    }): Promise<AdminServiceDetailsResponse> => {
+      const query = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v != null)
+          .map(([k, v]) => [k, String(v)])
+      ).toString();
+
+      const { data } = await this.request<AdminServiceDetailsResponse>(
+        `/admin/service-details?${query}`
+      );
+      return data;
+    },
+
+    /** Get single service details */
+    getServiceDetail: async (
+      serviceId: number
+    ): Promise<{ details: ServiceDetails }> => {
+      const { data } = await this.request<{ details: ServiceDetails }>(
+        `/service-details/${serviceId}`
+      );
+      console.log("details fetched from api client", data);
+      return data;
+    },
+
+    /** Create service details */
+    createServiceDetails: async (payload: {
+      serviceId: number;
+      overview: string;
+      visaFees: string;
+      documentsRequired: string;
+      photoSpecifications: string;
+      processingTime: string;
+      downloadsForm: string;
+    }): Promise<AdminCreateServiceDetailsResponse> => {
+      const { data } = await this.request<AdminCreateServiceDetailsResponse>(
+        "/admin/service-details",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
+      return data;
+    },
+
+    /** Update service details */
+    updateServiceDetails: async (
+      serviceId: number,
+      payload: Partial<{
+        overview: string;
+        visaFees: string;
+        documentsRequired: string;
+        photoSpecifications: string;
+        processingTime: string;
+        downloadsForm: string;
+      }>
+    ): Promise<AdminUpdateServiceDetailsResponse> => {
+      const { data } = await this.request<AdminUpdateServiceDetailsResponse>(
+        `/admin/service-details/${serviceId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        }
+      );
+      return data;
+    },
+
+    /** Delete service details */
+    deleteServiceDetails: async (
+      serviceId: number
+    ): Promise<AdminDeleteServiceDetailsResponse> => {
+      const { data } = await this.request<AdminDeleteServiceDetailsResponse>(
+        `/admin/service-details/${serviceId}`,
+        {
+          method: "DELETE",
         }
       );
       return data;

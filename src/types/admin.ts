@@ -220,3 +220,34 @@ export interface Counter {
   is_active: 0 | 1;
   updated_at?: string;
 }
+
+// src/types/admin.ts (append to existing file)
+export interface ServiceDetails {
+  service_id: number;
+  overview: string; // HTML
+  visa_fees: string; // HTML instead of array
+  documents_required: string; // HTML instead of array
+  photo_specifications: string; // HTML
+  processing_time: string; // HTML
+  downloads_form: string; // HTML instead of array
+  created_at: string;
+  updated_at: string;
+  service_title?: string;
+}
+
+export interface AdminServiceDetailsResponse {
+  details: ServiceDetails[];
+  pagination: Pagination;
+}
+
+export interface AdminCreateServiceDetailsResponse {
+  message: string;
+}
+
+export interface AdminUpdateServiceDetailsResponse {
+  message: string;
+}
+
+export interface AdminDeleteServiceDetailsResponse {
+  message: string;
+}
