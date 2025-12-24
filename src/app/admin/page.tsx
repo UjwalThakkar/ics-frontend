@@ -20,15 +20,26 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Auto-login if token exists
+  // Auto-login if session exists
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
-    const user = localStorage.getItem('user')
+    const checkAuth = async () => {
+      try {
+        const { data } = await phpAPI.getUserDetails()
 
-    if (token && user) {
-      setIsLoggedIn(true)
-    } else {
-      setIsLoggedIn(false)
+        if (data && data.user && data.type === 'admin') {
+          setIsLoggedIn(true)
+        } else {
+          // If logged in as user but not admin, or not logged in at all
+          setIsLoggedIn(false)
+          // Optional: If logged in as user, maybe logout or show message?
+          // For now, just show login screen (which will effectively force re-login as admin)
+        }
+      } catch (err) {
+        setIsLoggedIn(false)
+      }
     }
+
+    checkAuth()
   }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -40,6 +51,7 @@ export default function AdminPage() {
       if (step === 'credentials') {
         setStep('otp')
       } else if (step === 'otp') {
+        // phpAPI.login throws if failed
         const response = await phpAPI.login(
           'admin',
           loginData.email,
@@ -47,13 +59,12 @@ export default function AdminPage() {
           loginData.otp
         )
 
-        if (response.success && response.token) {
-          localStorage.setItem('auth_token', response.token)
-          localStorage.setItem('user', JSON.stringify(response.user))
-          setIsLoggedIn(true)
-        } else {
-          setError(response.error?.message || 'Invalid OTP')
-        }
+        // Login successful (cookie set by backend)
+
+        // Don't store auth_token!
+        // localStorage.setItem('auth_token', response.token)
+        localStorage.setItem('user', JSON.stringify(response.user))
+        setIsLoggedIn(true)
       }
     } catch (err: any) {
       setError(err.message || 'Login failed')

@@ -49,19 +49,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state from localStorage
+  // Initialize auth state by verifying cookie with backend
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
-        const storedToken = localStorage.getItem("auth_token");
-        const storedUser = localStorage.getItem("user");
+        // We attempt to fetch user details. If the cookie is valid, this succeeds.
+        const { data } = await phpAPI.getUserDetails();
 
-        if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+        if (data && data.user) {
+          setUser(data.user);
+          setToken("valid-session"); // Dummy token to satisfy interface
+        } else {
+          // Explicitly clear any stale data
+          localStorage.removeItem("user");
+          localStorage.removeItem("auth_token");
         }
       } catch (error) {
-        console.error("Error initializing auth:", error);
+        console.warn("Auth initialization failed (likely not logged in)", error);
         // Clear invalid data
         localStorage.removeItem("auth_token");
         localStorage.removeItem("user");
@@ -136,26 +140,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(true);
       console.log("🔐 AuthContext: Initiating login...");
 
-      const response = await phpAPI.login(type, email, password);
+      // phpAPI.login throws an error if login fails
+      const response = await phpAPI.login(type as "user" | "admin", email, password);
 
-      if (response.success) {
-        const { token: newToken, user: userData } = response;
+      // If we reach here, login was successful
+      const { user: userData } = response;
 
-        setToken(newToken);
-        setUser(userData);
+      setToken("valid-session"); // Dummy token
+      setUser(userData as any); // Cast because User interface might not match exactly
 
-        console.log("✅ AuthContext: Login successful", { user: userData });
+      console.log("✅ AuthContext: Login successful", { user: userData });
 
-        return { success: true };
-      } else {
-        console.error("❌ AuthContext: Login failed", response.error);
-        return {
-          success: false,
-          error:
-            response.error?.message ||
-            "Login failed. Please check your credentials.",
-        };
-      }
+      return { success: true };
     } catch (error: any) {
       console.error("❌ AuthContext: Login error", error);
 

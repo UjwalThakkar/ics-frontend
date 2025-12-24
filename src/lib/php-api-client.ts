@@ -13,6 +13,8 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
+console.log("API Base URL:", process.env.NEXT_PUBLIC_API_URL);
+
 /* ------------------------------------------------------------------ */
 /* Helper Types – match the exact JSON shapes returned by the backend */
 /* ------------------------------------------------------------------ */
@@ -25,6 +27,8 @@ interface ApiResponse<T = any> {
 
 interface LoginResponse {
   token: string;
+  csrfToken: string;  // CSRF token for protecting mutating requests
+  type: 'user' | 'admin';
   user: {
     id: string;
     first_name: string;
@@ -67,12 +71,28 @@ import {
 /* Main Client Class                                                  */
 /* ------------------------------------------------------------------ */
 class PHPAPIClient {
-  private token: string | null = null;
+  private csrfToken: string | null = null;
 
   constructor() {
     if (typeof window !== "undefined") {
-      this.token = localStorage.getItem("auth_token") ?? null;
+      this.csrfToken = localStorage.getItem("csrf_token") ?? null;
     }
+  }
+
+  /**
+   * Get CSRF token from cookie (set by backend)
+   */
+  private getCsrfTokenFromCookie(): string | null {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie.match(/ics_csrf_token=([^;]+)/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Get the current CSRF token (from memory, localStorage, or cookie)
+   */
+  getCsrfToken(): string | null {
+    return this.csrfToken || this.getCsrfTokenFromCookie();
   }
 
   /* --------------------------------------------------------------- */
@@ -83,26 +103,49 @@ class PHPAPIClient {
     init: RequestInit = {}
   ): Promise<{ data: T }> {
     const url = `${API_BASE_URL}${endpoint}`;
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      ...init.headers,
+      ...(init.headers as Record<string, string>),
     };
 
-    if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`;
+    // Note: No Bearer token sent. Authentication is handled via HTTP-only cookie.
+
+
+    // Add CSRF token for mutating requests (POST, PUT, DELETE, PATCH)
+    const method = init.method?.toUpperCase() ?? "GET";
+    if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
+      const csrf = this.getCsrfToken();
+      if (csrf) {
+        headers["X-CSRF-Token"] = csrf;
+      }
     }
 
-    console.debug("→", init.method ?? "GET", url);
-    const res = await fetch(url, { ...init, headers, credentials: "omit" });
+    console.debug("→", method, url);
+
+    // credentials: 'include' sends HTTP-only cookies automatically
+    const res = await fetch(url, {
+      ...init,
+      headers,
+      credentials: "include"  // Required for cookie-based auth!
+    });
 
     const payload: ApiResponse<T> = await res.json();
 
     if (!res.ok || !payload.success) {
-      const errMsg =
-        payload.error?.message ??
-        payload.message ??
-        payload.error ??
-        "Unknown API error";
+      // Helper to safely extract error message
+      let errMsg = "Unknown API error";
+      const err = payload.error;
+
+      if (err) {
+        if (typeof err === 'string') {
+          errMsg = err;
+        } else if (typeof err === 'object' && err !== null && 'message' in err) {
+          errMsg = (err as any).message;
+        }
+      } else if (payload.message) {
+        errMsg = payload.message;
+      }
+
       console.error("API error:", errMsg, payload);
       throw new Error(errMsg);
     }
@@ -124,17 +167,35 @@ class PHPAPIClient {
       body: JSON.stringify({ type, email, password, otp }),
     });
 
-    this.token = data.token;
-    localStorage.setItem("auth_token", data.token);
+    // We do NOT store auth_token in localStorage anymore.
+    // Auth is handled via HTTP-only cookie.
+
+    // Store CSRF token for mutating requests
+    if (data.csrfToken) {
+      this.csrfToken = data.csrfToken;
+      localStorage.setItem("csrf_token", data.csrfToken);
+    }
+
+    // Store user data for UI convenience/caching
     localStorage.setItem("user", JSON.stringify(data.user));
 
     return data;
   }
 
   async logout(): Promise<void> {
-    this.token = null;
-    localStorage.removeItem("auth_token");
+    try {
+      // Call backend to clear HTTP-only cookies
+      await this.request("/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.warn("Logout API call failed, clearing local state anyway", e);
+    }
+
+    // Clear local state
+    this.csrfToken = null;
     localStorage.removeItem("user");
+    localStorage.removeItem("csrf_token");
+    // Also clean up any legacy token if it exists
+    localStorage.removeItem("auth_token");
   }
 
   /* --------------------------------------------------------------- */
