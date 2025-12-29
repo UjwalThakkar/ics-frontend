@@ -4,6 +4,7 @@ import Hero from '@/components/Hero'
 import Services from '@/components/Services'
 import TrackingSection from '@/components/TrackingSection'
 import Footer from '@/components/Footer'
+import Chatbot from '@/components/Chatbot'
 
 export default function HomePage() {
   return (
@@ -13,6 +14,7 @@ export default function HomePage() {
       <Services />
       <TrackingSection />
       <Footer />
+      <Chatbot />
     </main>
   )
 }
